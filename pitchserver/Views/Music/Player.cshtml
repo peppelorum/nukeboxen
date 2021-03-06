@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+
+        <title>Pianobaren</title>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <script src="https://unpkg.com/vue@next"></script>
+        <script src="https://unpkg.com/tone@13.8.25/build/Tone.js"></script>
+    </head>
+    <body>
+        <button id="start-stop">start</button>
+        <button id="up">up</button>
+        <button id="down">down</button>
+        <button id="pitchstart">start pitch</button>
+        <button id="pitchstop">stop pitch</button>
+
+
+        <button id="noise">noise</button>
+
+        <div id="app">
+            <button @@click="getFiles">get files</button>
+
+            <ul>
+                <li v-for="n in files" :key="n">{{ n }}</li>
+            </ul>
+        </div>
+
+        <script>
+
+            const watchExampleVM = Vue.createApp({
+                data() {
+                    return {
+                        files: []
+                    }
+                },
+                watch: {
+                // whenever question changes, this function will run
+                /*question(newQuestion, oldQuestion) {
+                    if (newQuestion.indexOf('?') > -1) {
+                    this.getAnswer()
+                    }
+                } */
+                },
+                mounted () {
+                    axios.get('/music/getfiles')
+                    .then(function (response) {
+                        console.log(response);
+                        @* this.files = response.data; *@
+                        watchExampleVM.$root.$data.files = response.data;
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    })
+                    .then(function () {
+                    });
+                },
+                methods: {
+                    getFiles() {
+                    
+                    }
+                }
+            }).mount('#app')
+        </script>
+        
+
+        <script>
+
+			const player = new Tone.Player({
+				url: '/Music/Funk/Cumbia.mp3',
+				loop: true,
+				autostart: false,
+			})
+
+            const $startStopButton = document.getElementById('start-stop');
+            const $upButton = document.getElementById('up');
+            const $downButton = document.getElementById('down');
+            const $pitchstart = document.getElementById('pitchstart');
+            const $pitchstop = document.getElementById('pitchstop');
+            const $noise = document.getElementById('noise');
+
+            // const oscillator = new Tone.Oscillator();
+            const pitchShift = new Tone.PitchShift();
+
+            player.connect(pitchShift);
+            pitchShift.toMaster();
+
+            $startStopButton.onclick = () => {
+                if ($startStopButton.textContent === 'start') {
+                    $startStopButton.textContent = 'stop';
+                    player.start();
+                } else {
+                    $startStopButton.textContent = 'start';
+                    player.stop();
+                }
+            };
+
+            $noise.onclick = () => {
+                const distortion = new Tone.Distortion(0.4).toDestination();
+                //connect a player to the distortion
+                player.connect(distortion);
+            }
+
+            var pitchInterval;
+            var pitchUp = true;
+            var pitchAdjust = 0.1;
+            var music = [];
+
+            function getFiles() {
+               
+            }
+
+            function startPitch() {
+                clearInterval(pitchInterval);
+                var next = Math.round(Math.random() * 100);
+                pitchInterval = setInterval(pitch, next)
+            }
+
+            function stopPitch() {
+                pitchShift.pitch = 0;
+                clearInterval(pitchInterval);
+            }
+
+            function pitch() {
+                if (pitchShift.pitch > 1) {
+                    pitchUp = false;
+                }
+                if (pitchShift.pitch < -1) {
+                    pitchUp = true;
+                }
+                
+
+                if (pitchUp) {
+                    pitchShift.pitch += pitchAdjust;
+                } else {
+                    pitchShift.pitch -= pitchAdjust;
+                }
+                startPitch();
+            }
+
+            $pitchstart.onclick = () => startPitch();
+            $pitchstop.onclick = () => stopPitch();
+
+            $upButton.onclick = () =>  {
+                
+                pitchShift.pitch += 0.1;
+            }
+            $downButton.onclick = () => pitchShift.pitch -= 0.1;
+        </script>
+    </body>
+</html>
